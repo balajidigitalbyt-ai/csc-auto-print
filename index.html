@@ -1,0 +1,678 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>CSC Auto Print</title>
+
+  <!-- PDF.js for automatic PDF page counting -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f6fa;
+      color: #17202a;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: #075985;
+      color: white;
+      padding: 20px 16px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 26px;
+      margin-bottom: 5px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: auto;
+      padding: 18px 14px 40px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.07);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+
+    .upload-box {
+      border: 2px dashed #0ea5e9;
+      border-radius: 14px;
+      padding: 30px 15px;
+      text-align: center;
+      background: #f0f9ff;
+      cursor: pointer;
+    }
+
+    .upload-box:hover {
+      background: #e0f2fe;
+    }
+
+    .upload-icon {
+      font-size: 42px;
+      margin-bottom: 10px;
+    }
+
+    .upload-box strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .upload-box span {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    #pdfFile {
+      display: none;
+    }
+
+    .file-info {
+      display: none;
+      margin-top: 15px;
+      padding: 12px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .option {
+      margin-bottom: 16px;
+    }
+
+    .option label.title {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .print-types {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .print-type {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      text-align: center;
+      background: white;
+    }
+
+    .print-type.active {
+      border-color: #0284c7;
+      background: #f0f9ff;
+    }
+
+    .print-type input {
+      display: none;
+    }
+
+    .print-type .name {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .print-type .price {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .copies-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .copies-row button {
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 10px;
+      background: #e2e8f0;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    #copies {
+      width: 70px;
+      height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 17px;
+    }
+
+    .summary {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 7px 0;
+      font-size: 14px;
+    }
+
+    .summary-row.total {
+      border-top: 1px solid #cbd5e1;
+      margin-top: 8px;
+      padding-top: 14px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .pay-button {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      background: #16a34a;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+
+    .pay-button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .message {
+      display: none;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .message.error {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .message.success {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      padding: 10px;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 10px;
+      color: #0369a1;
+      font-size: 14px;
+    }
+
+    @media (max-width: 400px) {
+      .container {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="header">
+    <h1>CSC Auto Print</h1>
+    <p>Upload • Pay • Print</p>
+  </header>
+
+  <main class="container">
+
+    <!-- Upload -->
+    <section class="card">
+      <h2>1. Upload Your PDF</h2>
+
+      <label class="upload-box" for="pdfFile">
+        <div class="upload-icon">📄</div>
+        <strong>Tap to Upload PDF</strong>
+        <span>Only PDF files are accepted</span>
+      </label>
+
+      <input
+        type="file"
+        id="pdfFile"
+        accept="application/pdf"
+      >
+
+      <div id="fileInfo" class="file-info"></div>
+
+      <div id="loading" class="loading">
+        Counting PDF pages...
+      </div>
+
+      <div id="message" class="message"></div>
+    </section>
+
+
+    <!-- Print Type -->
+    <section class="card">
+      <h2>2. Select Print Type</h2>
+
+      <div class="print-types">
+
+        <label class="print-type active" id="bwBox">
+          <input
+            type="radio"
+            name="printType"
+            value="bw"
+            checked
+          >
+          <span class="name">B/W Print</span>
+          <span class="price">₹10 / page</span>
+        </label>
+
+        <label class="print-type" id="colorBox">
+          <input
+            type="radio"
+            name="printType"
+            value="color"
+          >
+          <span class="name">Color Print</span>
+          <span class="price">₹20 / page</span>
+        </label>
+
+      </div>
+    </section>
+
+
+    <!-- Copies -->
+    <section class="card">
+      <h2>3. Number of Copies</h2>
+
+      <div class="copies-row">
+        <button type="button" onclick="changeCopies(-1)">−</button>
+
+        <input
+          type="number"
+          id="copies"
+          value="1"
+          min="1"
+          max="100"
+        >
+
+        <button type="button" onclick="changeCopies(1)">+</button>
+      </div>
+    </section>
+
+
+    <!-- Summary -->
+    <section class="card">
+      <h2>4. Order Summary</h2>
+
+      <div class="summary">
+
+        <div class="summary-row">
+          <span>Pages</span>
+          <strong id="pageCount">0</strong>
+        </div>
+
+        <div class="summary-row">
+          <span>Print Type</span>
+          <strong id="printTypeText">B/W</strong>
+        </div>
+
+        <div class="summary-row">
+          <span>Copies</span>
+          <strong id="copyCount">1</strong>
+        </div>
+
+        <div class="summary-row">
+          <span>Rate</span>
+          <strong id="rate">₹10/page</strong>
+        </div>
+
+        <div class="summary-row total">
+          <span>Total</span>
+          <strong id="total">₹0</strong>
+        </div>
+
+      </div>
+
+      <button
+        class="pay-button"
+        id="payButton"
+        disabled
+        onclick="startPayment()"
+      >
+        Proceed to Payment
+      </button>
+
+    </section>
+
+  </main>
+
+  <div class="footer">
+    CSC Auto Print • Secure Digital Printing Service
+  </div>
+
+
+<script>
+
+  /*
+   * PDF.js worker
+   */
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+
+  let selectedFile = null;
+  let totalPages = 0;
+  let printType = "bw";
+  let copies = 1;
+
+
+  /*
+   * PDF Upload
+   */
+  document.getElementById("pdfFile").addEventListener("change", async function(event) {
+
+    const file = event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    clearMessage();
+
+    if (file.type !== "application/pdf") {
+      showMessage("Please select a PDF file only.", "error");
+      return;
+    }
+
+    selectedFile = file;
+
+    document.getElementById("fileInfo").style.display = "block";
+
+    document.getElementById("fileInfo").innerHTML =
+      "<strong>Selected:</strong> " + escapeHtml(file.name) +
+      "<br><strong>Size:</strong> " + formatBytes(file.size);
+
+    document.getElementById("loading").style.display = "block";
+
+    try {
+
+      const arrayBuffer = await file.arrayBuffer();
+
+      const pdf = await pdfjsLib.getDocument({
+        data: arrayBuffer
+      }).promise;
+
+      totalPages = pdf.numPages;
+
+      document.getElementById("pageCount").textContent = totalPages;
+
+      updateSummary();
+
+      document.getElementById("payButton").disabled = false;
+
+      document.getElementById("loading").style.display = "none";
+
+    } catch (error) {
+
+      console.error(error);
+
+      totalPages = 0;
+
+      document.getElementById("pageCount").textContent = "0";
+
+      document.getElementById("payButton").disabled = true;
+
+      document.getElementById("loading").style.display = "none";
+
+      showMessage(
+        "PDF read nahi ho paaya. Please another PDF try karein.",
+        "error"
+      );
+    }
+
+  });
+
+
+  /*
+   * Print type selection
+   */
+  document.querySelectorAll('input[name="printType"]').forEach(function(input) {
+
+    input.addEventListener("change", function() {
+
+      printType = this.value;
+
+      document.getElementById("bwBox").classList.remove("active");
+      document.getElementById("colorBox").classList.remove("active");
+
+      if (printType === "bw") {
+        document.getElementById("bwBox").classList.add("active");
+      } else {
+        document.getElementById("colorBox").classList.add("active");
+      }
+
+      updateSummary();
+
+    });
+
+  });
+
+
+  /*
+   * Copies
+   */
+  document.getElementById("copies").addEventListener("input", function() {
+
+    let value = parseInt(this.value);
+
+    if (isNaN(value) || value < 1) {
+      value = 1;
+    }
+
+    if (value > 100) {
+      value = 100;
+    }
+
+    copies = value;
+
+    this.value = copies;
+
+    updateSummary();
+
+  });
+
+
+  function changeCopies(amount) {
+
+    let newValue = copies + amount;
+
+    if (newValue < 1) {
+      newValue = 1;
+    }
+
+    if (newValue > 100) {
+      newValue = 100;
+    }
+
+    copies = newValue;
+
+    document.getElementById("copies").value = copies;
+
+    updateSummary();
+
+  }
+
+
+  /*
+   * Calculate total
+   */
+  function updateSummary() {
+
+    const rateValue = printType === "bw" ? 10 : 20;
+
+    const totalAmount =
+      totalPages * copies * rateValue;
+
+    document.getElementById("printTypeText").textContent =
+      printType === "bw" ? "B/W" : "Color";
+
+    document.getElementById("copyCount").textContent =
+      copies;
+
+    document.getElementById("rate").textContent =
+      "₹" + rateValue + "/page";
+
+    document.getElementById("total").textContent =
+      "₹" + totalAmount;
+
+  }
+
+
+  /*
+   * Payment placeholder
+   *
+   * Real payment gateway will be connected later.
+   */
+  function startPayment() {
+
+    if (!selectedFile) {
+      showMessage("Please upload a PDF first.", "error");
+      return;
+    }
+
+    if (totalPages <= 0) {
+      showMessage("PDF page count is not available.", "error");
+      return;
+    }
+
+    const rateValue = printType === "bw" ? 10 : 20;
+
+    const totalAmount =
+      totalPages * copies * rateValue;
+
+    showMessage(
+      "Payment gateway abhi connect nahi hua hai. Calculated amount: ₹" +
+      totalAmount +
+      ". Next step me automatic payment verification connect karenge.",
+      "success"
+    );
+
+  }
+
+
+  /*
+   * Helpers
+   */
+  function formatBytes(bytes) {
+
+    if (bytes === 0) {
+      return "0 Bytes";
+    }
+
+    const units = [
+      "Bytes",
+      "KB",
+      "MB",
+      "GB"
+    ];
+
+    const i =
+      Math.floor(Math.log(bytes) / Math.log(1024));
+
+    return (
+      parseFloat(
+        (bytes / Math.pow(1024, i)).toFixed(2)
+      ) +
+      " " +
+      units[i]
+    );
+
+  }
+
+
+  function escapeHtml(text) {
+
+    const div = document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+
+  }
+
+
+  function showMessage(text, type) {
+
+    const message =
+      document.getElementById("message");
+
+    message.textContent = text;
+
+    message.className =
+      "message " + type;
+
+  }
+
+
+  function clearMessage() {
+
+    const message =
+      document.getElementById("message");
+
+    message.textContent = "";
+
+    message.className = "message";
+
+  }
+
+</script>
+
+</body>
+</html>
+```
